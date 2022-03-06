@@ -1,212 +1,198 @@
-import { readFileSync, writeFileSync } from "fs";
-import dbI from "./interfaces/db.interface";
-import sportI from "./interfaces/sport.interface";
-import userI from "./interfaces/user.interface";
+import { PrismaClient } from "@prisma/client";
+
 import SportAlreadyExists from "./errors/SportAlreadyExists";
 import UserAlreadyExists from "./errors/UserAlreadyExists";
 import SportDoesNotExist from "./errors/SportDoesNotExist";
-import NotAnHighScore from "./errors/NotAnHighScore";
 import UserDoesNotExist from "./errors/UserDoesNotExist";
 
+interface scoreI {
+  score: number;
+  username: string;
+}
+
 class Database {
-  dbPath: string;
+  prisma;
 
-  constructor(dbPath: string) {
-    this.dbPath = dbPath;
-    try {
-      let rawData = readFileSync(dbPath, "utf8");
-    } catch (e) {
-      this.initalizeDatabase();
-    }
-  }
-
-  // Initalize an empty database
-  initalizeDatabase() {
-    var db: dbI = {
-      users: [],
-      sportList: [],
-      sports: [],
-    };
-
-    this.setDatabase(db);
-  }
-
-  getDatabase(): dbI {
-    let rawData = readFileSync(this.dbPath, "utf8");
-    var db: dbI = JSON.parse(rawData);
-    return db;
-  }
-
-  setDatabase(db: dbI) {
-    const rawData = JSON.stringify(db);
-    writeFileSync(this.dbPath, rawData, "utf8");
-  }
-
-  // Create empty users list
-  emptyUsers(db: dbI): userI[] {
-    var users: userI[] = [];
-    for (let i = 0; i < db.users.length; i++) {
-      const userName = db.users[i];
-      const user: userI = {
-        name: userName,
-        highScore: 0,
-      };
-      users.push(user);
-    }
-    return users;
+  constructor() {
+    this.prisma = new PrismaClient();
   }
 
   // Add user
-  addUser(username: string) {
-    var db = this.getDatabase();
-
-    db.users.forEach((user) => {
-      if (user == username) {
-        throw new UserAlreadyExists(username);
-      }
+  async addUser(username: string) {
+    const usernames = await this.prisma.user.count({
+      where: {
+        name: username,
+      },
     });
-    db.users.push(username);
-
-    var emptyUser: userI = {
-      name: username,
-      highScore: 0,
-    };
-
-    db.sports.forEach((sport) => {
-      sport.users.push(emptyUser);
+    if (usernames > 0) {
+      throw new UserAlreadyExists(username);
+    }
+    await this.prisma.user.create({
+      data: {
+        name: username,
+      },
     });
-
-    this.setDatabase(db);
   }
 
   // Remove a user
-  removeUser(username: string) {
-    var db = this.getDatabase();
+  async removeUser(username: string) {
+    await this.prisma.score.deleteMany({
+      where: {
+        user: {
+          name: username,
+        },
+      },
+    });
 
-    for (let i = 0; i < db.users.length; i++) {
-      if (db.users[i] == username) {
-        db.users.splice(i, 1);
-        db.sports.forEach((sport) => {
-          for (let j = 0; j < sport.users.length; j++) {
-            const user = sport.users[j];
-            if (user.name == username) {
-              sport.users.splice(j, 1);
-              break;
-            }
-          }
-        });
-        this.setDatabase(db);
-        return;
-      }
+    const user = await this.prisma.user.findFirst({
+      where: {
+        name: username,
+      },
+    });
+    if (!user) {
+      throw new UserDoesNotExist(username);
     }
-    throw new UserDoesNotExist(username);
+
+    await this.prisma.user.delete({
+      where: {
+        id: user.id,
+      },
+    });
   }
 
   // Add sport
-  addSport(sportName: string) {
-    var db = this.getDatabase();
-
-    // Check if sport already exists
-    db.sports.forEach((sport) => {
-      if (sport.name == sportName) {
-        // Throw error if sport already exists
-        throw new SportAlreadyExists(sportName);
-      }
+  async addSport(sportName: string) {
+    const sports = await this.prisma.sport.count({
+      where: {
+        name: sportName,
+      },
     });
-
-    db.sportList.push(sportName);
-
-    // Create the sport with empty valuas for each user
-    var sport: sportI = {
-      name: sportName,
-      users: this.emptyUsers(db),
-    };
-    db.sports.push(sport);
-    this.setDatabase(db);
+    if (sports > 0) {
+      throw new SportAlreadyExists(sportName);
+    }
+    await this.prisma.sport.create({
+      data: {
+        name: sportName,
+      },
+    });
   }
 
   // Remove sport
-  removeSport(sportName: string) {
-    var db = this.getDatabase();
+  async removeSport(sportName: string) {
+    await this.prisma.score.deleteMany({
+      where: {
+        sport: {
+          name: sportName,
+        },
+      },
+    });
 
-    // Check if the sport exists
-    for (let i = 0; i < db.sports.length; i++) {
-      if (db.sports[i].name == sportName) {
-        db.sports.splice(i, 1);
-        for (let j = 0; j < db.sportList.length; j++) {
-          if (db.sportList[j] == sportName) {
-            db.sportList.splice(j, 1);
-            this.setDatabase(db);
-            return;
-          }
-        }
-      }
+    const sport = await this.prisma.sport.findFirst({
+      where: {
+        name: sportName,
+      },
+    });
+    if (!sport) {
+      throw new SportDoesNotExist(sportName);
     }
 
-    throw new SportDoesNotExist(sportName);
+    await this.prisma.sport.delete({
+      where: {
+        id: sport.id,
+      },
+    });
   }
 
   // Get sports
-  getSports() {
-    var db = this.getDatabase();
-    return db.sportList;
+  async getSports() {
+    return await this.prisma.sport.findMany({ select: { name: true } });
   }
 
   // Get users
-  getUsers() {
-    var db = this.getDatabase();
-    return db.users;
+  async getUsers() {
+    return await this.prisma.user.findMany({ select: { name: true } });
   }
 
   // Get sport scores
-  getSportHighScores(sportName: string) {
-    var db = this.getDatabase();
-    for (let i = 0; i < db.sports.length; i++) {
-      const sport = db.sports[i];
-      if (sport.name == sportName) {
-        var users = sport.users;
-
-        users.sort((a, b) =>
-          a.highScore > b.highScore ? 1 : b.highScore > a.highScore ? -1 : 0
-        );
-
-        return users;
-      }
+  async getSportHighScores(sportName: string) {
+    const sport = await this.prisma.sport.findFirst({
+      where: {
+        name: sportName,
+      },
+    });
+    if (!sport) {
+      throw new SportDoesNotExist(sportName);
     }
 
-    throw new SportDoesNotExist(sportName);
+    const scores = await this.prisma.score.findMany({
+      where: {
+        sportId: sport.id,
+      },
+      select: {
+        user: true,
+        score: true,
+      },
+    });
+
+    const returnScores: scoreI[] = [];
+
+    scores.forEach((score) => {
+      returnScores.push({ score: score.score, username: score.user.name });
+    });
+    returnScores.sort((a, b) => a.score - b.score);
+    return returnScores;
   }
 
   // Set sport high score of user
-  setSportScoreOfUser(
+  async setSportScoreOfUser(
     sportName: string,
     username: string,
-    highscore: number,
-    overwrite: boolean
+    highscore: number
   ) {
-    var db = this.getDatabase();
-
-    db.sports.forEach((sport) => {
-      if (sport.name == sportName) {
-        sport.users.forEach((user) => {
-          if (user.name == username) {
-            if (user.highScore < highscore) {
-              user.highScore = highscore;
-              this.setDatabase(db);
-              return;
-            } else {
-              if (overwrite) {
-                user.highScore = highscore;
-                this.setDatabase(db);
-                return;
-              } else {
-                throw new NotAnHighScore(highscore, user.highScore);
-              }
-            }
-          }
-        });
-      }
+    const user = await this.prisma.user.findFirst({
+      where: {
+        name: username,
+      },
     });
+    if (!user) {
+      throw new UserDoesNotExist(username);
+    }
+    const sport = await this.prisma.sport.findFirst({
+      where: {
+        name: sportName,
+      },
+    });
+    if (!sport) {
+      throw new SportDoesNotExist(sportName);
+    }
+    const score = await this.prisma.score.findFirst({
+      where: {
+        user: {
+          name: username,
+        },
+        sport: {
+          name: sportName,
+        },
+      },
+    });
+    if (score) {
+      await this.prisma.score.update({
+        where: {
+          id: score.id,
+        },
+        data: {
+          score: highscore,
+        },
+      });
+    } else {
+      await this.prisma.score.create({
+        data: {
+          score: highscore,
+          userId: user.id,
+          sportId: sport.id,
+        },
+      });
+    }
   }
 }
 
