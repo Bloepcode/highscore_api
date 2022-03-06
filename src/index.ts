@@ -20,7 +20,8 @@ interface SuccessResponseI {
 async function main() {
   dotenv.config();
 
-  if (!process.env.PORT || !process.env.DB_FILE) {
+  if (!process.env.PORT || !process.env.DATABASE_URL) {
+    console.error("PORT or DATABASE_URL is not in .env");
     process.exit(1);
   }
 
@@ -115,9 +116,9 @@ async function main() {
   //
   // Remove user
   //
-  app.delete("/user/:username", (req, res) => {
+  app.delete("/user/:username", async (req, res) => {
     try {
-      db.removeUser(req.params.username);
+      await db.removeUser(req.params.username);
     } catch (e) {
       if (e instanceof UserDoesNotExist) {
         const error: ErrorResponseI = {
