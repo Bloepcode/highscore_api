@@ -1,8 +1,11 @@
 import * as dotenv from "dotenv";
 import express from "express";
+import { Request } from "express";
 import cors from "cors";
 import helmet from "helmet";
 import Database from "./database";
+import errorCodes from "./errors";
+import { hashApiKey, generateApiKey, verifyApiKey } from "./verify";
 import SportAlreadyExists from "./errors/SportAlreadyExists";
 import UserAlreadyExists from "./errors/UserAlreadyExists";
 import SportDoesNotExist from "./errors/SportDoesNotExist";
@@ -10,7 +13,6 @@ import UserDoesNotExist from "./errors/UserDoesNotExist";
 
 interface ErrorResponseI {
   success: boolean;
-  error: string;
   code: string;
 }
 interface SuccessResponseI {
@@ -20,10 +22,23 @@ interface SuccessResponseI {
 async function main() {
   dotenv.config();
 
-  if (!process.env.PORT || !process.env.DATABASE_URL) {
-    console.error("PORT or DATABASE_URL is not in .env");
-    process.exit(1);
+  if (!process.env.PORT) {
+    console.error("PORT is not in .env");
+    return;
   }
+  if (!process.env.DATABASE_URL) {
+    console.error("DADATABASE_URL is not in .env");
+    return;
+  }
+  if (!process.env.API_HASH) {
+    console.log("API_HASH was not found, generating one now...");
+    const apiHash = hashApiKey(generateApiKey());
+    console.log(
+      `API_HASH: '${apiHash}', please put this is .env as 'API_HASH'`
+    );
+    return;
+  }
+  const API = process.env.API_HASH;
 
   const PORT: number = parseInt(process.env.PORT as string, 10);
 
@@ -38,28 +53,46 @@ async function main() {
   //
   // Add sport
   //
-  app.post("/sport/:sportname", async (req, res) => {
-    try {
-      await db.addSport(req.params.sportname);
-    } catch (e) {
-      if (e instanceof SportAlreadyExists) {
+  app.post(
+    "/sport/:sportname",
+    async (req: Request<{ sportname: string; api_key: string }>, res) => {
+      if (!req.params.api_key) {
         const error: ErrorResponseI = {
           success: false,
-          error: "Sport already exists",
-          code: "sport_already_exists",
+          code: errorCodes.noApi,
         };
         res.json(error);
         return;
-      } else {
-        throw e;
       }
-    }
+      if (!verifyApiKey(req.params.api_key, API)) {
+        const error: ErrorResponseI = {
+          success: false,
+          code: errorCodes.incorrectApi,
+        };
+        res.json(error);
+        return;
+      }
+      try {
+        await db.addSport(req.params.sportname);
+      } catch (e) {
+        if (e instanceof SportAlreadyExists) {
+          const error: ErrorResponseI = {
+            success: false,
+            code: errorCodes.sportAlreadyExists,
+          };
+          res.json(error);
+          return;
+        } else {
+          throw e;
+        }
+      }
 
-    const success: SuccessResponseI = {
-      success: true,
-    };
-    res.json(success);
-  });
+      const success: SuccessResponseI = {
+        success: true,
+      };
+      res.json(success);
+    }
+  );
 
   //
   // Remove sport
@@ -71,8 +104,7 @@ async function main() {
       if (e instanceof SportDoesNotExist) {
         const error: ErrorResponseI = {
           success: false,
-          error: "Sport does not exist",
-          code: "sport_does_not_exist",
+          code: errorCodes.sportDoesNotExist,
         };
         res.json(error);
         return;
@@ -97,8 +129,7 @@ async function main() {
       if (e instanceof UserAlreadyExists) {
         const error: ErrorResponseI = {
           success: false,
-          error: "Username already exists",
-          code: "username_already_exists",
+          code: errorCodes.userAlreadyExists,
         };
         res.json(error);
         return;
@@ -123,8 +154,7 @@ async function main() {
       if (e instanceof UserDoesNotExist) {
         const error: ErrorResponseI = {
           success: false,
-          error: "User does not exist",
-          code: "user_does_not_exist",
+          code: errorCodes.userDoesNotExist,
         };
         res.json(error);
         return;
@@ -148,8 +178,7 @@ async function main() {
       if (isNaN(parseFloat(req.params.highscore))) {
         const error: ErrorResponseI = {
           success: false,
-          error: "Highscore is not a number!",
-          code: "NaN",
+          code: errorCodes.highscoreNotAnNumber,
         };
         res.json(error);
         return;
@@ -164,16 +193,14 @@ async function main() {
         if (e instanceof SportDoesNotExist) {
           const error: ErrorResponseI = {
             success: false,
-            error: "Sport does not exists!",
-            code: "sport_does_not_exist",
+            code: errorCodes.sportDoesNotExist,
           };
           res.json(error);
           return;
         } else if (e instanceof UserDoesNotExist) {
           const error: ErrorResponseI = {
             success: false,
-            error: "User does not exists!",
-            code: "user_does_not_exist",
+            code: errorCodes.userDoesNotExist,
           };
           res.json(error);
           return;
@@ -212,8 +239,7 @@ async function main() {
       if (e instanceof SportDoesNotExist) {
         const error: ErrorResponseI = {
           success: false,
-          error: "Sport does not exist",
-          code: "sport_does_not",
+          code: errorCodes.sportDoesNotExist,
         };
         res.json(error);
       } else {
