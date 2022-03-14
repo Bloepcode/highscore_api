@@ -22,6 +22,10 @@ Init de database met: `npx prisma migrate deploy`
 
 Start de server met `npm start`
 
+## Testing
+
+run `npm test`
+
 ## Todo
 
 - logging
