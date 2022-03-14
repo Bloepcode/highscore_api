@@ -20,4 +20,4 @@ jobs:
       - run: npm ci
       - run: npm test
         env:
-          DATABASE_URL: mysql://dev:${{ secrets.DatabasePassword }}@localhost:3306/di_api?schema=public
+          DATABASE_URL: 'mysql://dev:${{ secrets.DatabasePassword }}@localhost:3306/di_api?schema=public'
