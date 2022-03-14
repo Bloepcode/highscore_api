@@ -32,9 +32,11 @@ async function main() {
   }
   if (!process.env.API_HASH) {
     console.log("API_HASH was not found, generating one now...");
-    const apiHash = hashApiKey(generateApiKey());
+    const apiKey = generateApiKey();
+    const apiHash = hashApiKey(apiKey);
+    console.log(`API_HASH: '${apiHash}', please put this is .env as API_HASH`);
     console.log(
-      `API_HASH: '${apiHash}', please put this is .env as 'API_HASH'`
+      `API_KEY: '${apiKey}', please store this securly, to reset: remove API_HASH from .env`
     );
     return;
   }
@@ -54,17 +56,9 @@ async function main() {
   // Add sport
   //
   app.post(
-    "/sport/:sportname",
+    "/sport/:sportname?:api_key",
     async (req: Request<{ sportname: string; api_key: string }>, res) => {
-      if (!req.params.api_key) {
-        const error: ErrorResponseI = {
-          success: false,
-          code: errorCodes.noApi,
-        };
-        res.json(error);
-        return;
-      }
-      if (!verifyApiKey(req.params.api_key, API)) {
+      if (!verifyApiKey(API, req.params.api_key)) {
         const error: ErrorResponseI = {
           success: false,
           code: errorCodes.incorrectApi,

@@ -5,21 +5,25 @@
   "main": "index.js",
   "scripts": {
     "dev": "ts-node-dev --respawn --pretty --transpile-only src/index.ts",
-    "start": "tsc && node dist/index.js"
+    "start": "tsc && node dist/index.js",
+    "test": "npx prisma migrate reset && jest"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "@prisma/client": "^3.10.0",
+    "@types/jest": "^27.4.1",
     "cors": "^2.8.5",
     "dotenv": "^16.0.0",
     "express": "^4.17.3",
     "helmet": "^5.0.2",
+    "jest": "^27.5.1",
     "prisma": "^3.10.0",
     "rxdb": "^11.6.0",
     "sequelize": "^6.17.0",
-    "sqlite3": "^5.0.2"
+    "sqlite3": "^5.0.2",
+    "ts-jest": "^27.1.3"
   },
   "devDependencies": {
     "@types/cors": "^2.8.12",

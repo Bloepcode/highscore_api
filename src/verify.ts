@@ -1,18 +1,29 @@
-import { randomBytes, createHash } from "crypto";
+import { randomBytes, createHash, scryptSync, timingSafeEqual } from "crypto";
 
 function hashApiKey(apiKey: string) {
-  return createHash("md5").update(apiKey).digest("hex");
+  const salt = randomBytes(16).toString("hex");
+  // return createHash("md5").update(apiKey).digest("hex");
+  return scryptSync(apiKey, salt, 64).toString("hex");
 }
 
 function generateApiKey() {
   return randomBytes(16).toString("hex");
 }
 
-function verifyApiKey(apiKey: string, hash: string) {
-  if (hashApiKey(apiKey) == hash) {
-    return true;
+function verifyApiKey(hash: string, apiKey?: string) {
+  if (!apiKey) {
+    console.log("NO");
+    return false;
   }
-  return false;
+  const [salt, key] = hash.split(":");
+  const hashedBuffer = scryptSync(apiKey, salt, 64);
+
+  const keyBuffer = Buffer.from(key, "hex");
+  const match = timingSafeEqual(hashedBuffer, keyBuffer);
+
+  console.log(match);
+
+  return match;
 }
 
 export { hashApiKey, generateApiKey, verifyApiKey };

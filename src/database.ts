@@ -17,8 +17,12 @@ class Database {
     this.prisma = new PrismaClient();
   }
 
+  async disconnect() {
+    this.prisma.$disconnect();
+  }
+
   // Add user
-  async addUser(username: string) {
+  async addUser(username: string): Promise<boolean> {
     const usernames = await this.prisma.user.count({
       where: {
         name: username,
@@ -32,10 +36,11 @@ class Database {
         name: username,
       },
     });
+    return true;
   }
 
   // Remove a user
-  async removeUser(username: string) {
+  async removeUser(username: string): Promise<boolean> {
     await this.prisma.score.deleteMany({
       where: {
         user: {
@@ -58,10 +63,11 @@ class Database {
         id: user.id,
       },
     });
+    return true;
   }
 
   // Add sport
-  async addSport(sportName: string) {
+  async addSport(sportName: string): Promise<boolean> {
     const sports = await this.prisma.sport.count({
       where: {
         name: sportName,
@@ -75,10 +81,11 @@ class Database {
         name: sportName,
       },
     });
+    return true;
   }
 
   // Remove sport
-  async removeSport(sportName: string) {
+  async removeSport(sportName: string): Promise<boolean> {
     await this.prisma.score.deleteMany({
       where: {
         sport: {
@@ -101,6 +108,7 @@ class Database {
         id: sport.id,
       },
     });
+    return true;
   }
 
   // Get sports
@@ -148,7 +156,7 @@ class Database {
     sportName: string,
     username: string,
     highscore: number
-  ) {
+  ): Promise<boolean> {
     const user = await this.prisma.user.findFirst({
       where: {
         name: username,
@@ -193,6 +201,7 @@ class Database {
         },
       });
     }
+    return true;
   }
 }
 

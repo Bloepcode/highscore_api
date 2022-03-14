@@ -1,5 +1,4 @@
 interface ErrorsI {
-  noApi: string;
   incorrectApi: string;
   sportAlreadyExists: string;
   sportDoesNotExist: string;
@@ -9,7 +8,6 @@ interface ErrorsI {
 }
 
 const errorCodes: ErrorsI = {
-  noApi: "no_api",
   incorrectApi: "incorrect_api",
   sportAlreadyExists: "sport_already_exists",
   sportDoesNotExist: "sport_does_not_exist",
