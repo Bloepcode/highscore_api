@@ -4,6 +4,10 @@ on:
   pull_request:
     branches: [master]
 
+env:
+  DATABASE_URL: 'mysql://dev:${{ secrets.DatabasePassword }}@localhost:3306/di_api?schema=public'
+
+
 jobs:
   test_pull_request:
     runs-on: ubuntu-18.04
@@ -19,5 +23,3 @@ jobs:
           node-version: 14
       - run: npm ci
       - run: npm test
-        env:
-          DATABASE_URL: 'mysql://dev:${{ secrets.DatabasePassword }}@localhost:3306/di_api?schema=public'
