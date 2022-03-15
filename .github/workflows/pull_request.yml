@@ -2,7 +2,7 @@ name: Test pull request to main
 
 on:
   pull_request:
-    branches: [master]
+    branches: [main]
 
 env:
   DATABASE_URL: "mysql://dev:${{ secrets.DatabasePassword }}@localhost:3306/di_api?schema=public"
