@@ -5,7 +5,7 @@ on:
     branches: [main]
 
 env:
-  DATABASE_URL: "mysql://dev:${{ secrets.DatabasePassword }}@localhost:3306/di_api?schema=public"
+  DATABASE_URL: "mysql://root:${{ secrets.RootPassword }}@localhost:3306/di_api?schema=public"
 
 jobs:
   test_pull_request:
@@ -17,6 +17,7 @@ jobs:
         with:
           mysql root password: ${{ secrets.RootPassword }}
           mysql user: "dev"
+          mysql database: "di_api"
           mysql password: ${{ secrets.DatabasePassword }}
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v2
