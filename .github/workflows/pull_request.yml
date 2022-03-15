@@ -22,4 +22,6 @@ jobs:
           node-version: 14
       - run: npm ci
       - run: npx prisma migrate dev
+        with:
+          DATABASE_URL: "mysql://dev:${{ secrets.DatabasePassword }}@localhost:3306/di_api?schema=public"
       - run: npm test
