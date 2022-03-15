@@ -11,6 +11,8 @@ jobs:
   test_pull_request:
     runs-on: ubuntu-18.04
     steps:
+      - name: Shutdown Ubuntu MySQL server
+        run: sudo service mysql stop
       - uses: mirromutth/mysql-action@v1.1
         with:
           mysql root password: ${{ secrets.RootPassword }}
