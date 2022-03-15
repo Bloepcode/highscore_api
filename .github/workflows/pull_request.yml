@@ -5,18 +5,17 @@ on:
     branches: [master]
 
 env:
-  DATABASE_URL: 'mysql://dev:${{ secrets.DatabasePassword }}@localhost:3306/di_api?schema=public'
-
+  DATABASE_URL: "mysql://dev:${{ secrets.DatabasePassword }}@localhost:3306/di_api?schema=public"
 
 jobs:
   test_pull_request:
     runs-on: ubuntu-18.04
     steps:
       - uses: mirromutth/mysql-action@v1.1
-          with:
-            mysql root password: ${{ secrets.RootPassword }} # Required if "mysql user" is empty, default is empty. The root superuser password
-            mysql user: 'dev' # Required if "mysql root password" is empty, default is empty. The superuser for the specified database. Can use secrets, too
-            mysql password: ${{ secrets.DatabasePassword }} # Required if "mysql user" exists. The password for the "mysql user"
+        with:
+          mysql root password: ${{ secrets.RootPassword }}
+          mysql user: "dev"
+          mysql password: ${{ secrets.DatabasePassword }}
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v2
         with:
