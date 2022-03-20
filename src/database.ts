@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 
+import log from "./logger";
 import SportAlreadyExists from "./errors/SportAlreadyExists";
 import UserAlreadyExists from "./errors/UserAlreadyExists";
 import SportDoesNotExist from "./errors/SportDoesNotExist";
@@ -15,10 +16,12 @@ class Database {
 
   constructor() {
     this.prisma = new PrismaClient();
+    log.info("Database connected");
   }
 
   async disconnect() {
     this.prisma.$disconnect();
+    log.info("Database disconnected");
   }
 
   // Add user

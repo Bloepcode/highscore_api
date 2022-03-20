@@ -25,7 +25,3 @@ Start de server met `npm start`
 ## Testing
 
 run `npm test`
-
-## Todo
-
-- logging

@@ -3,6 +3,7 @@ import express from "express";
 import { Request } from "express";
 import cors from "cors";
 import helmet from "helmet";
+import log from "./logger";
 import Database from "./database";
 import errorCodes from "./errors";
 import { hashApiKey, generateApiKey, verifyApiKey } from "./verify";
@@ -23,21 +24,21 @@ async function main() {
   dotenv.config();
 
   if (!process.env.PORT) {
-    console.error("PORT is not in .env");
+    log.error("No PORT specified in .env file");
     return;
   }
   if (!process.env.DATABASE_URL) {
-    console.error("DADATABASE_URL is not in .env");
+    log.error("No DATABASE_URL specified in .env file");
     return;
   }
   if (!process.env.API_HASH) {
-    console.log("API_HASH was not found, generating one now...");
+    log.error("No API_HASH specified in .env file");
+    log.info("Generating an API key");
     const apiKey = generateApiKey();
     const apiHash = hashApiKey(apiKey);
-    console.log(`API_HASH: '${apiHash}', please put this is .env as API_HASH`);
-    console.log(
-      `API_KEY: '${apiKey}', please store this securly, to reset: remove API_HASH from .env`
-    );
+    log.info(`API key: ${apiKey}`);
+    log.info("Please update your .env file with the following values:");
+    log.info(`API_HASH=${apiHash}`);
     return;
   }
   const API = process.env.API_HASH;
@@ -58,6 +59,7 @@ async function main() {
   app.post(
     "/sport/:sportname?:api_key",
     async (req: Request<{ sportname: string; api_key: string }>, res) => {
+      log.info("POST at: /sport/:sportname");
       if (!verifyApiKey(API, req.params.api_key)) {
         const error: ErrorResponseI = {
           success: false,
@@ -92,6 +94,7 @@ async function main() {
   // Remove sport
   //
   app.delete("/sport/:sportname", async (req, res) => {
+    log.info("DELETE at: /sport/:sportname");
     try {
       await db.removeSport(req.params.sportname);
     } catch (e) {
@@ -117,6 +120,7 @@ async function main() {
   // Add user
   //
   app.post("/user/:username", async (req, res) => {
+    log.info("POST at: /user/:username");
     try {
       await db.addUser(req.params.username);
     } catch (e) {
@@ -142,6 +146,7 @@ async function main() {
   // Remove user
   //
   app.delete("/user/:username", async (req, res) => {
+    log.info("DELETE at: /user/:username");
     try {
       await db.removeUser(req.params.username);
     } catch (e) {
@@ -169,6 +174,7 @@ async function main() {
   app.post(
     "/sports/:sportname/users/:username/set/:highscore",
     async (req, res) => {
+      log.info("POST at: /sports/:sportname/users/:username/set/:highscore");
       if (isNaN(parseFloat(req.params.highscore))) {
         const error: ErrorResponseI = {
           success: false,
@@ -213,6 +219,7 @@ async function main() {
   // Get sports
   //
   app.get("/sports", async (req, res) => {
+    log.info("GET at: /sports");
     res.json(await db.getSports());
   });
 
@@ -220,6 +227,7 @@ async function main() {
   // Get users
   //
   app.get("/users", async (req, res) => {
+    log.info("GET at: /users");
     res.json(await db.getUsers());
   });
 
@@ -227,6 +235,7 @@ async function main() {
   // Get scores
   //
   app.get("/sport/:sport/scores", async (req, res) => {
+    log.info("GET at: /sport/:sport/scores");
     try {
       res.json(await db.getSportHighScores(req.params.sport));
     } catch (e) {
@@ -243,7 +252,7 @@ async function main() {
   });
 
   app.listen(PORT, () => {
-    console.log(`Listening on port ${PORT}`);
+    log.info(`Server listening on port ${PORT}`);
   });
 }
 
